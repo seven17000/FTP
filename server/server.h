@@ -9,9 +9,9 @@
 
 #include "../common/common.h"
 
-void server_retr(int sock_control,int sock_data,char *filename);
+void server_retr(int sock_control,int sock_data,char *filename);//文件发送接口
 
-int server_list(int sock_data,int sock_control);
+int server_list(int sock_data,int sock_control);//响应请求接口，显示文件列表
 
 int server_start_data_conn(int sock_control);//数据连接创建接口
 
