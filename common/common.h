@@ -3,10 +3,11 @@
 
 #include<stdio.h>
 #include<stdlib.h>
+#include<string.h>
 #include<arpa/inet.h>
 #include<ctype.h>
 #include<dirent.h>
-#include<errmo.h>
+#include<errno.h>
 #include<fcntl.h>
 #include<netdb.h>
 #include<netinet/in.h>
@@ -23,7 +24,7 @@ struct command
 {
     char arg[255];
     char code[5];
-}
+};
 
 int socket_create(int port);
 int socket_accept(int sock_listen);
