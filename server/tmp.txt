@@ -1,0 +1,7 @@
+-rw-r--r-- 1 seven seven7000   280 七月 15 20:57 Makefile
+-rwxr-xr-x 1 seven seven7000 42312 七月 16 15:01 server
+-rw-r--r-- 1 seven seven7000  8417 七月 16 15:00 server.c
+-rw-r--r-- 1 seven seven7000   716 七月 15 21:23 server.h
+-rw-r--r-- 1 seven seven7000 46072 七月 16 15:01 server.o
+-rw-r--r-- 1 seven seven7000     0 七月 15 21:24 test
+-rw-r--r-- 1 seven seven7000     0 七月 16 15:56 tmp.txt

@@ -21,7 +21,7 @@ int server_login(int sock_control);//用户登录接口
 
 int server_recv_cmd(int sock_control,char *cmd,char *arg);//用户指令接收接口
 
-int server_process(int sock_control);//客户端请求处理接口
+void server_process(int sock_control);//客户端请求处理接口
 
 #endif 
 

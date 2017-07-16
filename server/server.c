@@ -24,7 +24,7 @@ int main(int argc,char *argv[])
     //监听客户端控制连接请求
     while(1)
     {
-        if((sock_control = sock_accept(sock_listen)) < 0)
+        if((sock_control = socket_accept(sock_listen)) < 0)
             break;
         
         //收到连接请求
@@ -48,12 +48,12 @@ int main(int argc,char *argv[])
 //用户登录接口
 int server_login(int sock_control)
 {
-    char *buf[MAXSIZE];
-    char *user[MAXSIZE];
-    char *pass[MAXSIZE];
-    memset(buf,0,MAXSIZE);
+    char buf[MAXSIZE];
+    char user[MAXSIZE];
+    char pass[MAXSIZE];
     memset(user,0,MAXSIZE);
     memset(pass,0,MAXSIZE);
+    memset(buf,0,MAXSIZE);
     
     //接收用户名
     if((recv_data(sock_control,buf,sizeof(buf))) == -1)
@@ -71,17 +71,15 @@ int server_login(int sock_control)
 
     send_response(sock_control,331);//用户名接收完成，通知客户端输入密码
 
-    msmset(buf,0,MAXSIZE);
+    memset(buf,0,MAXSIZE);
     
     //接收密码
     if((recv_data(sock_control,buf,sizeof(buf))) == -1)
     {
         perror("recv error.\n");
-        exit(1)
+        exit(1);
     }
 
-    int i = 5;
-    int n = 0;
     while(buf[i] != 0)
     {
         pass[n++] = buf[i++];
@@ -104,7 +102,7 @@ int server_check_user(char *user,char *pass)
     FILE* fd;
     int auth = 0;
 
-    fd = fopen(".auth",r);
+    fd = fopen(".auth","r");
     if(fd == NULL)
     {
         perror("file not found.\n");
@@ -170,7 +168,7 @@ int server_recv_cmd(int sock_control,char *cmd,char *arg)
     //分离出cmd指令和arg
     strncpy(cmd,buffer,4);
     char *tmp = buffer+5;
-    strncpy(arg,tmp);
+    strcpy(arg,tmp);
     
     if(strcmp(cmd,"QUIT") == 0)
     {
@@ -207,10 +205,10 @@ int server_start_data_conn(int sock_control)
     struct sockaddr_in client_addr;
     socklen_t len = sizeof(client_addr);
     getpeername(sock_control,(struct sockaddr*)&client_addr,&len);//从控制套接字获取外部地址（获取客户端IP地址）
-    inet_ntop(AF_INET,&client_addr.sin_addr,buf,sizeof(buf));//把IP地址转换为主机字节序放入client_addr
+    inet_ntop(AF_INET,&client_addr.sin_addr,buffer,sizeof(buffer));//把IP地址转换为主机字节序放入client_addr
 
     //连接客户端
-    if((sock_data = socket_connect(CLIENT_PORT_ID,buf)) == 0)
+    if((sock_data = socket_connect(CLIENT_PORT_ID,buffer)) == 0)
     {
         return -1;
     }
@@ -236,13 +234,14 @@ void server_retr(int sock_control,int sock_data,char *filename)
     }
     else
     {
+        printf("start write data.\n");
         send_response(sock_control,150);//返回响应吗，打开文件成功
         
         //从数据连接上读数据直到数据读完
         do
         {
             num_read = fread(data,1,MAXSIZE,fd);
-            if((num_read < 0)
+            if(num_read < 0)
             {
                 printf("fread error.\n");
             }
@@ -251,11 +250,13 @@ void server_retr(int sock_control,int sock_data,char *filename)
             {
                 printf("send error.\n");
             }
-        }while(num_read < 0);
+            
+        }while(num_read > 0);
+        printf("data write over.\n");
+        send_response(sock_control,226);//返回响应码，数据读完关闭文件
+        fclose(fd);
     }
 
-    send_response(sock_control,226);//返回响应码，数据读完关闭文件
-    fclose(fd);
 }
 //响应请求：发送当前所在目录的目录项列表
 //关闭数据连接
@@ -272,7 +273,7 @@ int server_list(int sock_data,int sock_control)
         exit(1);
     }
 
-    fd = fopen(tmp.txt,"r");//读方式打开文件
+    fd = fopen("tmp.txt","r");//读方式打开文件
     if(!fd)
     {
         exit(1);
@@ -280,12 +281,16 @@ int server_list(int sock_data,int sock_control)
 
     fseek(fd,SEEK_SET,0);//定位到文件开始位置
 
+    send_response(sock_control,1);
+
+    memset(data,0,MAXSIZE);
+
     //从fd一次读取MAXSIZE个字节到data
     //并发送到数据连接套接字
     //直到读完
     while((num_read = fread(data,1,MAXSIZE,fd)) > 0)
     {
-        if(send(sock_data,data,num_read) < 0)
+        if(send(sock_data,data,num_read,0) < 0)
         {
             perror("send error.\n");
         }
@@ -294,11 +299,11 @@ int server_list(int sock_data,int sock_control)
     
     fclose(fd);
     send_response(sock_control,226);//发送应答码，数据传输完毕，关闭数据连接端口
-    return 0；
+    return 0;
 }
 
 //处理客户端请求接口
-int server_process(int sock_control)
+void server_process(int sock_control)
 {
     int sock_data;
     char cmd[5];
@@ -321,7 +326,8 @@ int server_process(int sock_control)
     {
     
         int rc = server_recv_cmd(sock_control,cmd,arg);//接受并解析客户端命令，获取其参数
-        
+        printf("server recveice cmd:%s\n",cmd);
+
         if((rc < 0) || (rc == 221))
             break;
 
@@ -333,7 +339,8 @@ int server_process(int sock_control)
                 close(sock_control);
                 exit(1);
             }
-            
+            printf("data connect start.\n");
+
             //执行指令
             if(strcmp(cmd,"LIST") == 0)
             {
@@ -345,7 +352,5 @@ int server_process(int sock_control)
             }
             close(sock_data);
         }
-     
     }
-
 }
