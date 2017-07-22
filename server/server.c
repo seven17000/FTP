@@ -27,7 +27,7 @@ int main(int argc,char *argv[])
         if((sock_control = socket_accept(sock_listen)) < 0)
             break;
         
-        //收到连接请求
+        //收到连接请求创建新进程处理请求
         if((pid = fork()) < 0)
         {
             perror("Fork child process error.\n");
@@ -159,7 +159,7 @@ int server_recv_cmd(int sock_control,char *cmd,char *arg)
     memset(arg,0,MAXSIZE);
     
     //接收控制套接字中的数据到buffer中
-    if((recv_data(sock_control,buffer,sizeof(buffer))) == 1)
+    if((recv_data(sock_control,buffer,sizeof(buffer))) == -1)
     {
         perror("recv error./n");
         exit(1);
@@ -195,7 +195,8 @@ int server_start_data_conn(int sock_control)
 {
     char buffer[MAXSIZE];
     int wait,sock_data;
-
+    
+    //确定连接成功
     if(recv(sock_control,&wait,sizeof(wait),0) < 0)
     {
         perror("recv error.\n");
@@ -204,7 +205,7 @@ int server_start_data_conn(int sock_control)
 
     struct sockaddr_in client_addr;
     socklen_t len = sizeof(client_addr);
-    getpeername(sock_control,(struct sockaddr*)&client_addr,&len);//从控制套接字获取外部地址（获取客户端IP地址）
+    getpeername(sock_control,(struct sockaddr*)&client_addr,&len);//从控制套接字获取远程地址（获取客户端IP地址）
     inet_ntop(AF_INET,&client_addr.sin_addr,buffer,sizeof(buffer));//把IP地址转换为主机字节序放入client_addr
 
     //连接客户端
@@ -317,7 +318,7 @@ void server_process(int sock_control)
     }
     else
     {
-        send_response(sock_control,430);//认证失败
+        send_response(sock_control,530);//认证失败
         exit(0);
     }
 
@@ -329,7 +330,10 @@ void server_process(int sock_control)
         printf("server recveice cmd:%s\n",cmd);
 
         if((rc < 0) || (rc == 221))
+        {
+            printf("client quit!\n");
             break;
+        }
 
         if(rc == 200)
         {
