@@ -6,7 +6,7 @@
  */
 #include "common.h"
 
-//创建套接字
+//创建监听套接字
 int socket_create(int port)
 {
     int sockfd;
@@ -19,19 +19,30 @@ int socket_create(int port)
     }
     sock_addr.sin_family = AF_INET;
     sock_addr.sin_port = htons(port);
-    sock_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    sock_addr.sin_addr.s_addr = htonl(INADDR_ANY);//INADDR_ANY表示所有IP不确定
+    //设置套接字选项
+    //第一个参数为需要设置的套接字
+    //第二个参数是套接字所在的层级SOL_SOCKET是为通用套接字
+    //第三个套接字是套接字的的选项SO_REUSEADDR是允许重用本地地址和端口
+    //第四个参数是一个选项类型的缓冲，根据选项的类型决定
+    //第五个参数是选项的长度
+    //成功返回0，失败返回-1
     if(setsockopt(sockfd,SOL_SOCKET,SO_REUSEADDR,&yes,sizeof(int)) == -1)
     {
         close(sockfd);
         perror("setsockopt() error.\n");
         return -1;
     }
+
+    //设置选项成功后则绑定套接字到地址
     if(bind(sockfd,(struct sockaddr *) &sock_addr,sizeof(sock_addr)) < 0)
     {
         close(sockfd);
         perror("bind() error.\n");
         return -1;
     }
+
+    //设置sockfd为监听套接字，最大监听数为5
     if(listen(sockfd,5) < 0)
     {
         close(sockfd);
